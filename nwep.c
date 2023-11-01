@@ -289,16 +289,7 @@ static __forceinline void initFbTex(int fb, int tex) {
 	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
   printf("attaching fb %i\n", fb);
 	oglBindFramebuffer(GL_FRAMEBUFFER, fb);
-  int dims[4] = {0};
-  glGetIntegerv(GL_SCISSOR_BOX, dims);
-  printf("scissor box size %i %i\n", dims[2], dims[3]);
-  glGetIntegerv(GL_VIEWPORT, dims);
-  printf("viewport size %i %i\n", dims[2], dims[3]);
 	oglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
-  if(glCheckFramebufferStatus(GL_FRAMEBUFFER)!=GL_FRAMEBUFFER_COMPLETE)
-    printf("framebuffer not complete!\n");
-  else
-    printf("GL_FRAMEBUFFER status is GL_FRAMEBUFFER_COMPLETE\n");
 
   /*
   // dirt: invalid op somewhere after glViewPort
@@ -542,18 +533,6 @@ static __forceinline void introPaint(float time) {
  	glEnable(GL_DEBUG_OUTPUT);
  	glDebugMessageCallback(MessageCallback, 0);
   /*
-  unsigned int err;
-  while((err = glGetError()) != GL_NO_ERROR){
-    printf("right before Viewport ");
-    switch(err){
-      case GL_INVALID_VALUE:
-        printf("GL_INVALID_VALUE\n");
-        break;
-      case GL_INVALID_OPERATION:
-        printf("GL_INVALID_OPERATION\n");
-        break;
-      default:
-        printf("not op or val err\n");
     }
   }
   */
@@ -597,6 +576,36 @@ static __forceinline void introPaint(float time) {
  		frame_start = frame_end;
  #endif
 
+  unsigned int err;
+  while((err = glGetError()) != GL_NO_ERROR){
+    printf("right before swap");
+    switch(err){
+      case GL_INVALID_VALUE:
+        printf("GL_INVALID_VALUE\n");
+        break;
+      case GL_INVALID_OPERATION:
+        printf("GL_INVALID_OPERATION\n");
+        break;
+      case GL_INVALID_FRAMEBUFFER_OPERATION:
+        printf("GL_INVALID_FRAMEBUFFER_OPERATION\n");
+        break;
+      default:
+        printf("not op or val err\n");
+    }
+  }
+
+  if(glCheckFramebufferStatus(GL_FRAMEBUFFER)!=GL_FRAMEBUFFER_COMPLETE)
+    printf("framebuffer not complete!\n");
+  else
+    printf("GL_FRAMEBUFFER status is GL_FRAMEBUFFER_COMPLETE\n");
+
+  {
+    int dims[4] = {0};
+    glGetIntegerv(GL_VIEWPORT, dims);
+    printf("viewport size %i %i\n", dims[2], dims[3]);
+    glGetIntegerv(GL_SCISSOR_BOX, dims);
+    printf("scissor box size %i %i\n", dims[2], dims[3]);
+  } 
  		SDL_GL_SwapBuffers();
  	}
  
