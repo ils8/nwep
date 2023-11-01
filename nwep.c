@@ -63,6 +63,7 @@
 #endif
 
 #include "glext.h"
+#define GL_GLEXT_VERSION 20170325
 
 #include "music/4klang.h"
 #define INTRO_LENGTH (1000ull * MAX_SAMPLES / SAMPLE_RATE)
@@ -286,8 +287,34 @@ static __forceinline void initFbTex(int fb, int tex) {
 	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  printf("attaching fb %i\n", fb);
 	oglBindFramebuffer(GL_FRAMEBUFFER, fb);
+  int dims[4] = {0};
+  glGetIntegerv(GL_SCISSOR_BOX, dims);
+  printf("scissor box size %i %i\n", dims[2], dims[3]);
+  glGetIntegerv(GL_VIEWPORT, dims);
+  printf("viewport size %i %i\n", dims[2], dims[3]);
 	oglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+  if(glCheckFramebufferStatus(GL_FRAMEBUFFER)!=GL_FRAMEBUFFER_COMPLETE)
+    printf("framebuffer not complete!\n");
+  else
+    printf("GL_FRAMEBUFFER status is GL_FRAMEBUFFER_COMPLETE\n");
+
+  /*
+  // dirt: invalid op somewhere after glViewPort
+  unsigned int err;
+  while((err = glGetError()) != GL_NO_ERROR)
+    switch(err){
+      case GL_INVALID_VALUE:
+        printf("GL_INVALID_VALUE\n");
+        break;
+      case GL_INVALID_OPERATION:
+        printf("GL_INVALID_OPERATION\n");
+        break;
+      default:
+        printf("not op or val err\n");
+    }
+  */
 }
 
 static void paint(int prog, int src_tex, int dst_fb, float time) {
@@ -342,6 +369,24 @@ static __forceinline void introInit() {
 
 	glGenTextures(FbTex_COUNT, tex);
 	oglGenFramebuffers(FbTex_COUNT, fb);
+
+  /*
+  //dirt: invalid op somehwere after ViewPort
+  unsigned int err;
+  while((err = glGetError()) != GL_NO_ERROR){
+    printf("in introInit ");
+    switch(err){
+      case GL_INVALID_VALUE:
+        printf("GL_INVALID_VALUE\n");
+        break;
+      case GL_INVALID_OPERATION:
+        printf("GL_INVALID_OPERATION\n");
+        break;
+      default:
+        printf("not op or val err\n");
+    }
+  }
+  */
 
 	initFbTex(tex[FbTex_Ray], fb[FbTex_Ray]);
 	//initFbTex(tex[FbTex_Dof], fb[FbTex_Dof]);
@@ -469,9 +514,6 @@ static __forceinline void introPaint(float time) {
  	pthread_create(&audio_thread, 0, (void *(*)(void*))__4klang_render, lpSoundBuffer);
  	//__4klang_render(lpSoundBuffer);
  #endif
- 	// dirt: add opengl debug
- 	glEnable(GL_DEBUG_OUTPUT);
- 	glDebugMessageCallback(MessageCallback, 0);
  
   // dirt: check sdl_init
   //#ifdef NO_AUDIO
@@ -493,6 +535,28 @@ static __forceinline void introPaint(float time) {
   // dirt: check SDL_SetVideoMode
  	if(SDL_SetVideoMode(XRES, YRES, 32, SDL_OPENGL | FULLSCREEN) == NULL)
     printf("SDL_SetVideoMode: %s\n", SDL_GetError());
+
+ 	// dirt: add opengl debug
+  printf("%s\n", glGetString(GL_VERSION));
+  printf("gcc %i.%i.%i\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+ 	glEnable(GL_DEBUG_OUTPUT);
+ 	glDebugMessageCallback(MessageCallback, 0);
+  /*
+  unsigned int err;
+  while((err = glGetError()) != GL_NO_ERROR){
+    printf("right before Viewport ");
+    switch(err){
+      case GL_INVALID_VALUE:
+        printf("GL_INVALID_VALUE\n");
+        break;
+      case GL_INVALID_OPERATION:
+        printf("GL_INVALID_OPERATION\n");
+        break;
+      default:
+        printf("not op or val err\n");
+    }
+  }
+  */
 
  	glViewport(0, 0, XRES, YRES);
  	introInit();
